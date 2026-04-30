@@ -1,79 +1,48 @@
-# Домашнее задание к занятию "`Базы данных`" - `Осипов Геннадий`
+# Домашнее задание к занятию «Работа с данными (DDL/DML)»
 
+### Инструкция по выполнению домашнего задания
 
-### Задание 1
-
-`
-Опишите не менее семи таблиц, из которых состоит база данных. Определите:
-какие данные хранятся в этих таблицах,
-какой тип данных у столбцов в этих таблицах, если данные хранятся в PostgreSQL.
-`
-
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота 1](ссылка на скриншот 1)`
-
+Желаем успехов в выполнении домашнего задания.
 
 ---
 
-### Задание 2
+Задание можно выполнить как в любом IDE, так и в командной строке.
 
-`Ниже приведен SQL код (DDL) для создания таблиц в PostgreSQL. Таблицы и связи протестированы на локальной БД.`
-
+### Задание 1
+1.1. Поднимите чистый инстанс MySQL версии 8.0+. Можно использовать локальный сервер или контейнер Docker.
+1.2. Создайте учётную запись sys_temp.
+1.3. Выполните запрос на получение списка пользователей в базе данных. (скриншот)
+```sql
+SELECT User, Host FROM mysql.user;
 ```
--- 1. Тип подразделения (Отдел, Группа, Департамент)
-CREATE TABLE department_type (
-    department_type_id SERIAL PRIMARY KEY,
-    type_name VARCHAR(50) NOT NULL UNIQUE
-);
+![img.png](sakila-db/img2.png)
+1.4. Дайте все права для пользователя sys_temp.
+1.5. Выполните запрос на получение списка прав для пользователя sys_temp. (скриншот)
+```sql
+SHOW GRANTS FOR 'sys_temp'@'%';
+```
+![img.png](sakila-db/img3.png)
+1.6. Переподключитесь к базе данных от имени sys_temp.
+Для смены типа аутентификации с sha2 используйте запрос: 
+```sql
+ALTER USER 'sys_test'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+```
+1.6. По ссылке https://downloads.mysql.com/docs/sakila-db.zip скачайте дамп базы данных.
+1.7. Восстановите дамп в базу данных.
+1.8. При работе в IDE сформируйте ER-диаграмму получившейся базы данных. 
+При работе в командной строке используйте команду для получения всех таблиц базы данных. (скриншот)
+```sql
+USE sakila; SHOW TABLES
+```
+![img.png](sakila-db/img4.png)
 
--- 2. Структурное подразделение
-CREATE TABLE structural_unit (
-    structural_unit_id SERIAL PRIMARY KEY,
-    unit_name VARCHAR(255) NOT NULL UNIQUE,
-    department_type_id INT NOT NULL,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT
-);
 
--- 3. Должность
-CREATE TABLE position (
-    position_id SERIAL PRIMARY KEY,
-    position_name VARCHAR(255) NOT NULL UNIQUE
-);
+*Результатом работы должны быть скриншоты обозначенных заданий, а также простыня со всеми запросами.*
 
--- 4. Адрес филиала
-CREATE TABLE branch_address (
-    branch_address_id SERIAL PRIMARY KEY,
-    full_address TEXT NOT NULL UNIQUE
-);
 
--- 5. Проект
-CREATE TABLE project (
-    project_id SERIAL PRIMARY KEY,
-    project_name VARCHAR(255) NOT NULL UNIQUE
-);
-
--- 6. Сотрудник (основная таблица)
-CREATE TABLE employee (
-    employee_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    salary NUMERIC(10, 2) NOT NULL CHECK (salary >= 0),
-    position_id INT NOT NULL,
-    department_type_id INT NOT NULL,
-    structural_unit_id INT NOT NULL,
-    hire_date DATE NOT NULL,
-    branch_address_id INT NOT NULL,
-    FOREIGN KEY (position_id) REFERENCES position(position_id) ON DELETE RESTRICT,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT,
-    FOREIGN KEY (structural_unit_id) REFERENCES structural_unit(structural_unit_id) ON DELETE RESTRICT,
-    FOREIGN KEY (branch_address_id) REFERENCES branch_address(branch_address_id) ON DELETE RESTRICT
-);
-
--- 7. Связь сотрудников и проектов (many-to-many)
-CREATE TABLE employee_project (
-    employee_project_id SERIAL PRIMARY KEY,
-    employee_id INT NOT NULL,
-    project_id INT NOT NULL,
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE
-);
+### Задание 2
+Составьте таблицу, используя любой текстовый редактор или Excel, в которой должно быть два столбца: в первом должны быть названия таблиц восстановленной базы, во втором названия первичных ключей этих таблиц. Пример: (скриншот/текст)
+```
+Название таблицы | Название первичного ключа
+customer         | customer_id
 ```
