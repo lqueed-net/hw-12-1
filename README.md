@@ -43,6 +43,20 @@ USE sakila; SHOW TABLES
 ### Задание 2
 Составьте таблицу, используя любой текстовый редактор или Excel, в которой должно быть два столбца: в первом должны быть названия таблиц восстановленной базы, во втором названия первичных ключей этих таблиц. Пример: (скриншот/текст)
 ```
-Название таблицы | Название первичного ключа
-customer         | customer_id
+  Название таблицы | Название первичного ключа                                                                                                                                     
+  country          | country_id                                                                                                                                                    
+  city             | city_id                                                                                                                                                       
+  address          | address_id                                                                                                                                                    
+  staff            | staff_id                                                                                                                                                      
+  store            | store_id                                                                                                                                                      
+  customer         | customer_id                                                                                                                                                   
+  language         | language_id                                                                                                                                                   
+  film             | film_id                                                                                                                                                       
+  actor            | actor_id                                                                                                                                                      
+  category         | category_id                                                                                                                                                   
+  inventory        | inventory_id                                                                                                                                                  
+  rental           | rental_id                                                                                                                                                     
+  payment          | payment_id                                                                                                                                                    
+  film_actor       | actor_id, film_id                                                                                                                                             
+  film_category    | film_id, category_id 
 ```
