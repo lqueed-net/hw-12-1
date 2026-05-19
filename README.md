@@ -1,77 +1,44 @@
-# Домашнее задание к занятию "`Базы данных`" - `Осипов Геннадий`
+# Домашнее задание к занятию «Репликация и масштабирование. Часть 1»
 
+---
 
 ### Задание 1
 
-`
-Опишите не менее семи таблиц, из которых состоит база данных. Определите:
-какие данные хранятся в этих таблицах,
-какой тип данных у столбцов в этих таблицах, если данные хранятся в PostgreSQL.
-`
+На лекции рассматривались режимы репликации master-slave, master-master, опишите их различия.
 
-![alt text](https://github.com/lqueed-net/hw-12-1/blob/main/img/hw-12-1.drawio.png)
+Master-Slave (Один ведущий):
+Запись - только на Master. Чтение - на Slave или Master. При падении Master запись прекращается. Нужно ручное переключение (или MHA/Orchestrator).
+Используется для бекапов или масштабирования чтения
+
+Master-Master (Два активных)
+Запись - еа оба узла одновременно, чтение - с любого. Высокая доступность (работоспособность сохраняется при падении одной из реплик).
+Главная проблема - конфликты: при одновременной записи одной строки репликация сломается (ошибка дубликата ключа или lost update).
 
 ---
 
 ### Задание 2
 
-`Ниже приведен SQL код (DDL) для создания таблиц в PostgreSQL. Таблицы и связи протестированы на локальной БД.`
+Выполните конфигурацию master-slave репликации, примером можно пользоваться из лекции.
 
-```
--- 1. Тип подразделения (Отдел, Группа, Департамент)
-CREATE TABLE department_type (
-    department_type_id SERIAL PRIMARY KEY,
-    type_name VARCHAR(50) NOT NULL UNIQUE
-);
+*Приложите скриншоты конфигурации, выполнения работы: состояния и режимы работы серверов.*
+master
+<img width="876" height="181" alt="image" src="https://github.com/user-attachments/assets/75692a1b-c6ca-4ff4-a31e-ecc102cec745" />
+<img width="542" height="174" alt="image" src="https://github.com/user-attachments/assets/d5e71bb1-f77c-4e7d-a498-4c36973fdc91" />
 
--- 2. Структурное подразделение
-CREATE TABLE structural_unit (
-    structural_unit_id SERIAL PRIMARY KEY,
-    unit_name VARCHAR(255) NOT NULL UNIQUE,
-    department_type_id INT NOT NULL,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT
-);
+slave
+<img width="719" height="206" alt="image" src="https://github.com/user-attachments/assets/903a2d65-9676-4c3f-868f-86d5df342517" />
+<img width="554" height="197" alt="image" src="https://github.com/user-attachments/assets/da77f1ca-9cec-46dd-92de-de6c1e9d4be1" />
 
--- 3. Должность
-CREATE TABLE position (
-    position_id SERIAL PRIMARY KEY,
-    position_name VARCHAR(255) NOT NULL UNIQUE
-);
+# Сборка образов
+docker build -t mysql_master ./master
+docker build -t mysql_slave ./slave
 
--- 4. Адрес филиала
-CREATE TABLE branch_address (
-    branch_address_id SERIAL PRIMARY KEY,
-    full_address TEXT NOT NULL UNIQUE
-);
+# Создание сети
+docker network create replication
 
--- 5. Проект
-CREATE TABLE project (
-    project_id SERIAL PRIMARY KEY,
-    project_name VARCHAR(255) NOT NULL UNIQUE
-);
+# Запуск контейнеров
+docker run -d --name mysql_master --net replication -p 3306:3306 mysql_master
+docker run -d --name mysql_slave --net replication -p 3307:3306 mysql_slave
 
--- 6. Сотрудник (основная таблица)
-CREATE TABLE employee (
-    employee_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    salary NUMERIC(10, 2) NOT NULL CHECK (salary >= 0),
-    position_id INT NOT NULL,
-    department_type_id INT NOT NULL,
-    structural_unit_id INT NOT NULL,
-    hire_date DATE NOT NULL,
-    branch_address_id INT NOT NULL,
-    FOREIGN KEY (position_id) REFERENCES position(position_id) ON DELETE RESTRICT,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT,
-    FOREIGN KEY (structural_unit_id) REFERENCES structural_unit(structural_unit_id) ON DELETE RESTRICT,
-    FOREIGN KEY (branch_address_id) REFERENCES branch_address(branch_address_id) ON DELETE RESTRICT
-);
-
--- 7. Связь сотрудников и проектов (many-to-many)
-CREATE TABLE employee_project (
-    employee_project_id SERIAL PRIMARY KEY,
-    employee_id INT NOT NULL,
-    project_id INT NOT NULL,
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE
-);
-```
+<img width="644" height="411" alt="image" src="https://github.com/user-attachments/assets/0013a6f5-9bca-40fe-91b2-89aa44042b18" />
+<img width="672" height="738" alt="image" src="https://github.com/user-attachments/assets/ffb694f4-9076-4d7e-a1bf-6cdcc08c237e" />
