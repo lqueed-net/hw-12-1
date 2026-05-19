@@ -1,77 +1,67 @@
-# Домашнее задание к занятию "`Базы данных`" - `Осипов Геннадий`
+# Домашнее задание к занятию «Резервное копирование баз данных»
 
+**Домашнее задание выполните в Google Docs или в md-файле в вашем репозитории GitHub.** 
 
-### Задание 1
+Для оформления вашего решения в GitHub можете воспользоваться [шаблоном](https://github.com/netology-code/sys-pattern-homework).
 
-`
-Опишите не менее семи таблиц, из которых состоит база данных. Определите:
-какие данные хранятся в этих таблицах,
-какой тип данных у столбцов в этих таблицах, если данные хранятся в PostgreSQL.
-`
+Название файла должно содержать номер лекции и фамилию студента. Пример названия: «12.8. Резервное копирование баз данных — Александр Александров».
 
-![alt text](https://github.com/lqueed-net/hw-12-1/blob/main/img/hw-12-1.drawio.png)
+Перед тем как выслать ссылку, убедитесь, что её содержимое не является приватным, то есть открыто на просмотр всем, у кого есть ссылка. Если необходимо прикрепить дополнительные ссылки, просто добавьте их в свой Google Docs.
+
+Любые вопросы задавайте в разделе «Вопросы по заданию» в личном кабинете.
 
 ---
 
-### Задание 2
+### Задание 1. Резервное копирование
 
-`Ниже приведен SQL код (DDL) для создания таблиц в PostgreSQL. Таблицы и связи протестированы на локальной БД.`
+### Кейс
+Финансовая компания решила увеличить надёжность работы баз данных и их резервного копирования. 
 
-```
--- 1. Тип подразделения (Отдел, Группа, Департамент)
-CREATE TABLE department_type (
-    department_type_id SERIAL PRIMARY KEY,
-    type_name VARCHAR(50) NOT NULL UNIQUE
-);
+Необходимо описать, какие варианты резервного копирования подходят в случаях: 
 
--- 2. Структурное подразделение
-CREATE TABLE structural_unit (
-    structural_unit_id SERIAL PRIMARY KEY,
-    unit_name VARCHAR(255) NOT NULL UNIQUE,
-    department_type_id INT NOT NULL,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT
-);
+1.1. Необходимо восстанавливать данные в полном объёме за предыдущий день.
 
--- 3. Должность
-CREATE TABLE position (
-    position_id SERIAL PRIMARY KEY,
-    position_name VARCHAR(255) NOT NULL UNIQUE
-);
+1.2. Необходимо восстанавливать данные за час до предполагаемой поломки.
 
--- 4. Адрес филиала
-CREATE TABLE branch_address (
-    branch_address_id SERIAL PRIMARY KEY,
-    full_address TEXT NOT NULL UNIQUE
-);
+1.3.* Возможен ли кейс, когда при поломке базы происходило моментальное переключение на работающую или починенную базу данных.
 
--- 5. Проект
-CREATE TABLE project (
-    project_id SERIAL PRIMARY KEY,
-    project_name VARCHAR(255) NOT NULL UNIQUE
-);
 
--- 6. Сотрудник (основная таблица)
-CREATE TABLE employee (
-    employee_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    salary NUMERIC(10, 2) NOT NULL CHECK (salary >= 0),
-    position_id INT NOT NULL,
-    department_type_id INT NOT NULL,
-    structural_unit_id INT NOT NULL,
-    hire_date DATE NOT NULL,
-    branch_address_id INT NOT NULL,
-    FOREIGN KEY (position_id) REFERENCES position(position_id) ON DELETE RESTRICT,
-    FOREIGN KEY (department_type_id) REFERENCES department_type(department_type_id) ON DELETE RESTRICT,
-    FOREIGN KEY (structural_unit_id) REFERENCES structural_unit(structural_unit_id) ON DELETE RESTRICT,
-    FOREIGN KEY (branch_address_id) REFERENCES branch_address(branch_address_id) ON DELETE RESTRICT
-);
+1.1. Восстановление данных за предыдущий день
+Подходит полное резервное копирование (Full Backup), выполняемое ежедневно (например, ночью). В сочетании с дифференциальными или инкрементными бэкапами можно ускорить восстановление, но ключевое — наличие ежедневной копии.
 
--- 7. Связь сотрудников и проектов (many-to-many)
-CREATE TABLE employee_project (
-    employee_project_id SERIAL PRIMARY KEY,
-    employee_id INT NOT NULL,
-    project_id INT NOT NULL,
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE
-);
-```
+1.2. Восстановление данных за час до поломки
+Необходима комбинация: Полные бэкапы (например, раз в сутки) + Инкрементные или дифференциальные бэкапы (каждый час) + Бинарные логи (WAL/Binlog) — позволяют восстановить на любой момент времени (Point-in-Time Recovery).
+Итог: восстанавливаем полную копию + накатываем изменения до нужного часа/минуты.
+
+1.3. Моментальное переключение на работающую БД
+Такой кейс возможен. Это не резервное копирование в чистом виде, а отказоустойчивая кластеризация:
+Репликация master-slave в синхронном или асинхронном режиме + автоматический failover.
+При падении master роль автоматически переключается на slave, и приложение продолжает работать с минимальным временем простоя.
+
+---
+
+### Задание 2. PostgreSQL
+
+2.1. С помощью официальной документации приведите пример команды резервирования данных и восстановления БД (pgdump/pgrestore).
+
+Основная команда для создания резервной копии базы данных выглядит так :
+pg_dump -Fc -b -v -f backup.dump имя_базы_данных
+
+Для восстановления базы из дампа, созданного в "custom" формате (-Fc), используется команда pg_restore :
+pg_restore -C -d postgres -v backup.dump
+
+
+---
+
+### Задание 3. MySQL
+
+В MySQL нет одной встроенной команды для инкрементного резервного копирования, но есть MySQL Enterprise Backup:
+
+mysqlbackup \
+  --user=root \
+  --password=your_password \
+  --incremental \
+  --incremental-base=history:last_backup \
+  --backup-dir=/path/to/incremental_backup_dir \
+  backup
+
